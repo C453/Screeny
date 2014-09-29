@@ -1,20 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Linq;
 using System.Net;
 using System.Windows.Forms;
 using System.Xml;
-using System.Xml.Linq;
 using Utilities;
 
 namespace Screeny
 {
     public partial class MainFrm : Form
     {
+        private const string ClientId = "d5237df3a9ff3a3"; //Get a ID here: https://api.imgur.com/oauth2/addclient
         private readonly globalKeyboardHook _gkh = new globalKeyboardHook();
         private bool _active;
         private Rectangle _bounds;
@@ -22,6 +20,7 @@ namespace Screeny
         private int _initialX;
         private int _initialY;
         private bool _isDown;
+        private static Random _random = new Random();
 
         public MainFrm()
         {
@@ -48,6 +47,9 @@ namespace Screeny
                     _active = true;
                     TopMost = true;
                     WindowState = FormWindowState.Maximized;
+
+                    this.TopMost = true;
+
                     Opacity = .5;
                     break;
                 case Keys.Escape:
@@ -55,11 +57,9 @@ namespace Screeny
                     {
                         _active = false;
                         TopMost = false;
-                        WindowState = FormWindowState.Minimized;
+                        Hide();
                         Opacity = 1;
                     }
-                    break;
-                default:
                     break;
             }
             e.Handled = true;
@@ -82,8 +82,7 @@ namespace Screeny
         {
             if (!_active || !_isDown) return;
             Refresh();
-            var drwaPen = new Pen(Color.Navy, 3);
-            int width = e.X - _initialX, height = e.Y - _initialY;
+            var drwaPen = new Pen(RandomColor(), 3);
             _bounds = new Rectangle(Math.Min(e.X, _initialX), Math.Min(e.Y, _initialY), Math.Abs(e.X - _initialX),
                 Math.Abs(e.Y - _initialY));
             _formGraphics = CreateGraphics();
@@ -97,30 +96,34 @@ namespace Screeny
             _isDown = false;
             var bmp = new Bitmap(_bounds.Width, _bounds.Height, PixelFormat.Format32bppArgb);
             Graphics g = Graphics.FromImage(bmp);
+            _active = false;
+            TopMost = false;
+            Hide();
+            Opacity = 1;
             g.CopyFromScreen(_bounds.Left, _bounds.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
             //bmp.Save(@"C:/Users/C453/Desktop/img.jpg", ImageFormat.Png); //Test
 
             using (var w = new WebClient())
             {
-                var clientID = "d5237df3a9ff3a3";
-                w.Headers.Add("Authorization", "Client-ID " + clientID);
+                w.Headers.Add("Authorization", "Client-ID " + ClientId);
                 var values = new NameValueCollection
                 {
                     {"image", Convert.ToBase64String(ImageToByte(bmp))}
                 };
 
-                var response = w.UploadValues("https://api.imgur.com/3/upload.xml", values);
+                byte[] response = w.UploadValues("https://api.imgur.com/3/upload.xml", values);
 
                 var xml = new XmlDocument();
                 xml.Load(new MemoryStream(response));
+                if (xml.DocumentElement == null)
+                {
+                    MessageBox.Show("There was an error uploading.");
+                    return;
+                };
+
                 var link = xml.DocumentElement.SelectSingleNode("/data/link").InnerText;
 
-                _active = false;
-                TopMost = false;
-                WindowState = FormWindowState.Minimized;
-                Opacity = 1;
-
-                var lv= new LinkViewer {Link = link};
+                var lv = new LinkViewer {Link = link};
                 lv.Show();
             }
         }
@@ -129,6 +132,11 @@ namespace Screeny
         {
             var converter = new ImageConverter();
             return (byte[]) converter.ConvertTo(img, typeof (byte[]));
+        }
+
+        private static Color RandomColor()
+        {
+            return Color.FromArgb(_random.Next(255), _random.Next(255), _random.Next(255));
         }
     }
 }

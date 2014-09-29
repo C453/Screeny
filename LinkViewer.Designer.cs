@@ -37,7 +37,7 @@
             // 
             this.linkTextBox.Location = new System.Drawing.Point(12, 12);
             this.linkTextBox.Name = "linkTextBox";
-            this.linkTextBox.Size = new System.Drawing.Size(216, 20);
+            this.linkTextBox.Size = new System.Drawing.Size(229, 20);
             this.linkTextBox.TabIndex = 0;
             // 
             // openBtn
