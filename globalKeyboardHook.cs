@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
@@ -77,19 +78,38 @@ namespace Utilities
         /// <summary>
         /// Installs the global hook
         /// </summary>
+        //public void hook()
+        //{
+        //    IntPtr hInstance = LoadLibrary("User32");
+        //    hhook = SetWindowsHookEx(WH_KEYBOARD_LL, hookProc, hInstance, 0);
+        //}
+
+        private static keyboardHookProc callbackDelegate;
+
         public void hook()
         {
+            if (callbackDelegate != null) throw new InvalidOperationException("Can't hook more than once");
             IntPtr hInstance = LoadLibrary("User32");
-            hhook = SetWindowsHookEx(WH_KEYBOARD_LL, hookProc, hInstance, 0);
+            callbackDelegate = new keyboardHookProc(hookProc);
+            hhook = SetWindowsHookEx(WH_KEYBOARD_LL, callbackDelegate, hInstance, 0);
+            if (hhook == IntPtr.Zero) throw new Win32Exception();
+        }
+
+        public void unhook()
+        {
+            if (callbackDelegate == null) return;
+            bool ok = UnhookWindowsHookEx(hhook);
+            if (!ok) throw new Win32Exception();
+            callbackDelegate = null;
         }
 
         /// <summary>
         /// Uninstalls the global hook
         /// </summary>
-        public void unhook()
-        {
-            UnhookWindowsHookEx(hhook);
-        }
+        //public void unhook()
+        //{
+        //    UnhookWindowsHookEx(hhook);
+        //}
 
         /// <summary>
         /// The callback for the keyboard hook

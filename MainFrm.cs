@@ -20,7 +20,7 @@ namespace Screeny
         private int _initialX;
         private int _initialY;
         private bool _isDown;
-        private static Random _random = new Random();
+        private static readonly Random Random = new Random();
 
         public MainFrm()
         {
@@ -45,6 +45,7 @@ namespace Screeny
             {
                 case Keys.PrintScreen:
                     _active = true;
+                    Show();
                     TopMost = true;
                     WindowState = FormWindowState.Maximized;
 
@@ -117,7 +118,7 @@ namespace Screeny
                 xml.Load(new MemoryStream(response));
                 if (xml.DocumentElement == null)
                 {
-                    MessageBox.Show("There was an error uploading.");
+                    MessageBox.Show(@"There was an error uploading.");
                     return;
                 };
 
@@ -136,7 +137,7 @@ namespace Screeny
 
         private static Color RandomColor()
         {
-            return Color.FromArgb(_random.Next(255), _random.Next(255), _random.Next(255));
+            return Color.FromArgb(Random.Next(255), Random.Next(255), Random.Next(255));
         }
     }
 }
