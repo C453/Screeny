@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Net;
+using System.Runtime.ConstrainedExecution;
 using System.Windows.Forms;
 using System.Xml;
 using Utilities;
@@ -44,14 +45,7 @@ namespace Screeny
             switch (e.KeyCode)
             {
                 case Keys.PrintScreen:
-                    _active = true;
-                    Show();
-                    TopMost = true;
-                    WindowState = FormWindowState.Maximized;
-
-                    this.TopMost = true;
-
-                    Opacity = .5;
+                    PrtScnBtnPressed();
                     break;
                 case Keys.Escape:
                     if (_active)
@@ -95,14 +89,34 @@ namespace Screeny
             if (!_active) return;
 
             _isDown = false;
+            //bmp.Save(@"C:/Users/C453/Desktop/img.jpg", ImageFormat.Png); //Test
+
+            TakeScreenshot();
+        }
+
+        public void PrtScnBtnPressed()
+        {
+            _active = true;
+            Show();
+            TopMost = true;
+            WindowState = FormWindowState.Maximized;
+
+            this.TopMost = true;
+
+            Opacity = .5;
+        }
+
+        public void TakeScreenshot()
+        {
+            if (_bounds.Width == 0 || _bounds.Height == 0) return;
+
             var bmp = new Bitmap(_bounds.Width, _bounds.Height, PixelFormat.Format32bppArgb);
-            Graphics g = Graphics.FromImage(bmp);
+            var g = Graphics.FromImage(bmp);
             _active = false;
             TopMost = false;
             Hide();
             Opacity = 1;
             g.CopyFromScreen(_bounds.Left, _bounds.Top, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
-            //bmp.Save(@"C:/Users/C453/Desktop/img.jpg", ImageFormat.Png); //Test
 
             using (var w = new WebClient())
             {
@@ -112,7 +126,7 @@ namespace Screeny
                     {"image", Convert.ToBase64String(ImageToByte(bmp))}
                 };
 
-                byte[] response = w.UploadValues("https://api.imgur.com/3/upload.xml", values);
+                var response = w.UploadValues("https://api.imgur.com/3/upload.xml", values);
 
                 var xml = new XmlDocument();
                 xml.Load(new MemoryStream(response));
@@ -122,9 +136,12 @@ namespace Screeny
                     return;
                 };
 
-                var link = xml.DocumentElement.SelectSingleNode("/data/link").InnerText;
+                var selectSingleNode = xml.DocumentElement.SelectSingleNode("/data/link");
+                if (selectSingleNode == null) return;
 
-                var lv = new LinkViewer {Link = link};
+                var link = selectSingleNode.InnerText;
+
+                var lv = new LinkViewer { Link = link };
                 lv.Show();
             }
         }
@@ -133,6 +150,16 @@ namespace Screeny
         {
             var converter = new ImageConverter();
             return (byte[]) converter.ConvertTo(img, typeof (byte[]));
+        }
+
+        private void notifyIcon1_MouseDoubleClick(object sender, MouseEventArgs e)
+        {
+            PrtScnBtnPressed();
+        }
+
+        private void notifyIcon1_MouseClick(object sender, MouseEventArgs e)
+        {
+            PrtScnBtnPressed();
         }
     }
 }
