@@ -83,7 +83,7 @@ namespace Screeny
         {
             if (!_active || !_isDown) return;
             Refresh();
-            var drwaPen = new Pen(RandomColor(), 3);
+            var drwaPen = new Pen(Color.Navy, 3);
             _bounds = new Rectangle(Math.Min(e.X, _initialX), Math.Min(e.Y, _initialY), Math.Abs(e.X - _initialX),
                 Math.Abs(e.Y - _initialY));
             _formGraphics = CreateGraphics();
@@ -133,11 +133,6 @@ namespace Screeny
         {
             var converter = new ImageConverter();
             return (byte[]) converter.ConvertTo(img, typeof (byte[]));
-        }
-
-        private static Color RandomColor()
-        {
-            return Color.FromArgb(Random.Next(255), Random.Next(255), Random.Next(255));
         }
     }
 }
